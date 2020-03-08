@@ -281,12 +281,14 @@ func (w *TreeView) ScrollTo(item *TreeItem) error {
 	if !w.IsValidItem(item) || item.IsRoot() {
 		return ErrInvalid
 	}
-	children := w.RootItem().Children()
+	// The commented out code was supposed to fix some bug.
+	// But for me it seems to work better without that "fix".
+	/*children := w.RootItem().Children()
 	if len(children) == 0 {
 		return ErrInvalid
 	}
 	//fix see bug: first scroll to root
-	eval(fmt.Sprintf("%v see %v", w.id, children[0].id))
+	eval(fmt.Sprintf("%v see %v", w.id, children[0].id))*/
 	return eval(fmt.Sprintf("%v see %v", w.id, item.id))
 }
 
