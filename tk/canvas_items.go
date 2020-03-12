@@ -42,6 +42,9 @@ func (w* Canvas) DeleteLine(line *CanvasLine) {
 func (w* Canvas) DeleteImage(image *CanvasImage) {
 	w.Delete(image.CanvasItem)
 }
+func (w* Canvas) DeleteOval(oval *CanvasOval) {
+	w.Delete(oval.CanvasItem)
+}
 func (w* Canvas) CreateArc(x1, y1, x2, y2 int) {}
 //func (w* Canvas) CreateBitmap(x, y int) {}
 func (w* Canvas) CreateImage(x, y float64, attributes ...*WidgetAttr) *CanvasImage {
