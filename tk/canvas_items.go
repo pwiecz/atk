@@ -5,22 +5,21 @@ import "strings"
 
 type CanvasItem struct {
 	canvas *Canvas
-	id int
-	typ CanvasItemType
+	id     int
+	typ    CanvasItemType
 }
-type CanvasImage struct { *CanvasItem }
-type CanvasOval struct {
-	*CanvasItem
-}
-type CanvasLine struct {
-	*CanvasItem
-}
+type CanvasImage struct{ *CanvasItem }
+type CanvasOval struct{ *CanvasItem }
+type CanvasLine struct{ *CanvasItem }
+type CanvasRectangle struct{ *CanvasItem }
+type CanvasText struct{ *CanvasItem }
 
 type CanvasItemType int
+
 const (
 	CanvasItemTypeNone CanvasItemType = iota
 	CanvasItemTypeArc
-//	CanvasItemTypeBitmap
+	//	CanvasItemTypeBitmap
 	CanvasItemTypeImage
 	CanvasItemTypeLine
 	CanvasItemTypeOval
@@ -30,29 +29,36 @@ const (
 	CanvasItemTypeWindow
 )
 
-func (w* Canvas) DeleteAllItems() {
+func (w *Canvas) DeleteAllItems() {
 	evalAsString(fmt.Sprintf("%v delete all", w.id))
 }
-func (w* Canvas) Delete(item *CanvasItem) {
+func (w *Canvas) Delete(item *CanvasItem) {
 	evalAsString(fmt.Sprintf("%v delete %d", w.id, item.id))
 }
-func (w* Canvas) DeleteLine(line *CanvasLine) {
+func (w *Canvas) DeleteLine(line *CanvasLine) {
 	w.Delete(line.CanvasItem)
 }
-func (w* Canvas) DeleteImage(image *CanvasImage) {
+func (w *Canvas) DeleteImage(image *CanvasImage) {
 	w.Delete(image.CanvasItem)
 }
-func (w* Canvas) DeleteOval(oval *CanvasOval) {
+func (w *Canvas) DeleteOval(oval *CanvasOval) {
 	w.Delete(oval.CanvasItem)
 }
-func (w* Canvas) CreateArc(x1, y1, x2, y2 int) {}
+func (w *Canvas) DeleteRectangle(rect *CanvasRectangle) {
+	w.Delete(rect.CanvasItem)
+}
+func (w *Canvas) DeleteText(text *CanvasText) {
+	w.Delete(text.CanvasItem)
+}
+func (w *Canvas) CreateArc(x1, y1, x2, y2 int) {}
+
 //func (w* Canvas) CreateBitmap(x, y int) {}
-func (w* Canvas) CreateImage(x, y float64, attributes ...*WidgetAttr) *CanvasImage {
+func (w *Canvas) CreateImage(x, y float64, attributes ...*WidgetAttr) *CanvasImage {
 	attrs := buildCanvasItemAttributeScript(CanvasItemTypeImage, attributes)
 	id, _ := evalAsInt(fmt.Sprintf("%v create image %f %f %s", w.id, x, y, attrs))
 	return &CanvasImage{&CanvasItem{w, id, CanvasItemTypeImage}}
 }
-func (w* Canvas) CreateLine(coords []CanvasCoordinates, attributes... *WidgetAttr) *CanvasLine {
+func (w *Canvas) CreateLine(coords []CanvasCoordinates, attributes ...*WidgetAttr) *CanvasLine {
 	attrs := buildCanvasItemAttributeScript(CanvasItemTypeLine, attributes)
 	coordStrings := make([]string, 0, len(coords))
 	for _, coord := range coords {
@@ -62,17 +68,25 @@ func (w* Canvas) CreateLine(coords []CanvasCoordinates, attributes... *WidgetAtt
 	return &CanvasLine{&CanvasItem{w, id, CanvasItemTypeLine}}
 }
 
-func (w* Canvas) CreateOval(x1, y1, x2, y2 float64, attributes ...*WidgetAttr) *CanvasOval {
+func (w *Canvas) CreateOval(x1, y1, x2, y2 float64, attributes ...*WidgetAttr) *CanvasOval {
 	attrs := buildCanvasItemAttributeScript(CanvasItemTypeOval, attributes)
 	id, _ := evalAsInt(fmt.Sprintf("%v create oval %f %f %f %f %s", w.id, x1, y1, x2, y2, attrs))
 	return &CanvasOval{&CanvasItem{w, id, CanvasItemTypeOval}}
 }
-func (w* Canvas) CreatePolygon(coords []CanvasCoordinates) {}
-func (w* Canvas) CreateRectangle(x1, y1, x2, y2 int) {}
-func (w* Canvas) CreateText(x, y int) {}
-func (w* Canvas) CreateWindow(x, y int) {}
+func (w *Canvas) CreatePolygon(coords []CanvasCoordinates) {}
+func (w *Canvas) CreateRectangle(x1, y1, x2, y2 float64, attributes ...*WidgetAttr) *CanvasRectangle {
+	attrs := buildCanvasItemAttributeScript(CanvasItemTypeRectangle, attributes)
+	id, _ := evalAsInt(fmt.Sprintf("%v create rectangle %f %f %f %f %s", w.id, x1, y1, x2, y2, attrs))
+	return &CanvasRectangle{&CanvasItem{w, id, CanvasItemTypeRectangle}}
+}
+func (w *Canvas) CreateText(x, y float64, attributes ...*WidgetAttr) *CanvasText {
+	attrs := buildCanvasItemAttributeScript(CanvasItemTypeText, attributes)
+	id, _ := evalAsInt(fmt.Sprintf("%v create text %f %f %s", w.id, x, y, attrs))
+	return &CanvasText{&CanvasItem{w, id, CanvasItemTypeText}}
+}
+func (w *Canvas) CreateWindow(x, y int) {}
 
-func (w* CanvasItem) BindEvent(event string, fn func(e *Event)) error {
+func (w *CanvasItem) BindEvent(event string, fn func(e *Event)) error {
 	if !IsEvent(event) {
 		return ErrInvalid
 	}
@@ -83,7 +97,7 @@ func (w* CanvasItem) BindEvent(event string, fn func(e *Event)) error {
 	})
 }
 
-func (w* CanvasItem) addCanvasItemEventHelper(event string, fnid string, ev *Event, fn func()) error {
+func (w *CanvasItem) addCanvasItemEventHelper(event string, fnid string, ev *Event, fn func()) error {
 	mainInterp.CreateAction(fnid, func(args []string) {
 		ev.parser(args)
 		fn()
@@ -127,7 +141,8 @@ type CanvasCoordinates struct {
 	x, y float64
 	unit string
 }
-func (c* CanvasCoordinates) String() string {
+
+func (c *CanvasCoordinates) String() string {
 	return fmt.Sprintf("%f%s %f%s", c.x, c.unit, c.y, c.unit)
 }
 func CanvasPixelCoords(x, y float64) CanvasCoordinates {
@@ -163,50 +178,63 @@ func CanvasItemAttrWidth(width float64) *WidgetAttr {
 	return &WidgetAttr{"width", width}
 }
 
-func CanvasImageAttrAnchor(anchor Anchor) *WidgetAttr {
+func CanvasItemAttrAnchor(anchor Anchor) *WidgetAttr {
 	return &WidgetAttr{"anchor", anchor}
 }
-func CanvasImageAttrImage(image *Image) *WidgetAttr {
+func CanvasItemAttrImage(image *Image) *WidgetAttr {
 	return &WidgetAttr{"image", image}
 }
-func CanvasImageAttrActiveImage(image *Image) *WidgetAttr {
+func CanvasItemAttrActiveImage(image *Image) *WidgetAttr {
 	return &WidgetAttr{"activeimage", image}
 }
-func CanvasImageAttrDisabledImage(image *Image) *WidgetAttr {
+func CanvasItemAttrDisabledImage(image *Image) *WidgetAttr {
 	return &WidgetAttr{"disabledimage", image}
 }
 
-func (w* Canvas) LowerItems(tags string) error {
+func CanvasItemAttrFont(font string) *WidgetAttr {
+	return &WidgetAttr{"font", font}
+}
+func CanvasItemAttrJustify(how Justify) *WidgetAttr {
+	return &WidgetAttr{"justify", how}
+}
+func CanvasItemAttrText(text string) *WidgetAttr {
+	return &WidgetAttr{"text", text}
+}
+func CanvasItemAttrUnderline(charIndex int) *WidgetAttr {
+	return &WidgetAttr{"underline", charIndex}
+}
+
+func (w *Canvas) LowerItems(tags string) error {
 	return eval(fmt.Sprintf("%v lower %s", w.id, tags))
 }
-func (w* Canvas) LowerItemsBelow(tags, below string) error {
+func (w *Canvas) LowerItemsBelow(tags, below string) error {
 	return eval(fmt.Sprintf("%v lower %s %s", w.id, tags, below))
 }
-func (w* Canvas) RaiseItems(tags string) error {
+func (w *Canvas) RaiseItems(tags string) error {
 	return eval(fmt.Sprintf("%v raise %s", w.id, tags))
 }
-func (w* Canvas) RaiseItemsAbove(tags, above string) error {
+func (w *Canvas) RaiseItemsAbove(tags, above string) error {
 	return eval(fmt.Sprintf("%v raise %s %s", w.id, tags, above))
 }
 
-func (c* CanvasItem) Lower() error {
+func (c *CanvasItem) Lower() error {
 	return eval(fmt.Sprintf("%v lower %d", c.canvas.id, c.id))
 }
-func (c* CanvasItem) Move(dx, dy float64) error {
+func (c *CanvasItem) Move(dx, dy float64) error {
 	return eval(fmt.Sprintf("%v move %d %f %f", c.canvas.id, c.id, dx, dy))
 }
-func (c* CanvasItem) MoveTo(x, y float64) error {
+func (c *CanvasItem) MoveTo(x, y float64) error {
 	return eval(fmt.Sprintf("%v moveto %d %f %f", c.canvas.id, c.id, x, y))
 }
-func (c* CanvasItem) Raise() error {
+func (c *CanvasItem) Raise() error {
 	return eval(fmt.Sprintf("%v raise %d", c.canvas.id, c.id))
 }
-func (c* CanvasItem) SetFill(color string) error {
+func (c *CanvasItem) SetFill(color string) error {
 	return eval(fmt.Sprintf("%v itemconfigure %d -fill {%v}", c.canvas.id, c.id, color))
 }
-func (c* CanvasItem) SetOutline(color string) error {
+func (c *CanvasItem) SetOutline(color string) error {
 	return eval(fmt.Sprintf("%v itemconfigure %d -outline {%v}", c.canvas.id, c.id, color))
 }
-func (c* CanvasItem) Type() CanvasItemType {
+func (c *CanvasItem) Type() CanvasItemType {
 	return c.typ
 }
