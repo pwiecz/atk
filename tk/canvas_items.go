@@ -224,6 +224,9 @@ func (c *CanvasItem) Move(dx, dy float64) error {
 	return eval(fmt.Sprintf("%v move %d %f %f", c.canvas.id, c.id, dx, dy))
 }
 func (c *CanvasItem) MoveTo(x, y float64) error {
+	if !mainInterp.SupportTk86() {
+		return ErrUnsupport
+	}
 	return eval(fmt.Sprintf("%v moveto %d %f %f", c.canvas.id, c.id, x, y))
 }
 func (c *CanvasItem) Raise() error {
